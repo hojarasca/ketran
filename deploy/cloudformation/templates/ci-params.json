@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "EnvName",
+    "ParameterValue": "software-nodo"
+  },
+  {
+    "ParameterKey": "CiAccessIp",
+    "ParameterValue": "181.22.117.132/0"
+  },
+  {
+    "ParameterKey": "CiSshKey",
+    "ParameterValue": "migue@pangea"
+  }
+]

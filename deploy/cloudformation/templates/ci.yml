@@ -1,0 +1,88 @@
+Description: Udagram app infraestructure
+
+Parameters:
+  EnvName:
+    Description: Name of the environment. 
+    Type: String
+  CiAccessIp:
+    Description: Ip address for where bastion can be accessed
+    Type: String
+  CiSshKey:
+    Description: ssh key used for bastion server
+    Type: String
+    Default: migue@pangea
+  CiInstanceType:
+    Description: Instance type used to deploy the main app
+    Type: String
+    Default: t2.micro # free tier
+
+Resources:
+  #
+  # Security group. Opens privatelly port 22 for ssh, and publicly port 8080 for jenkins.
+  #
+  CiSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: CiSecurityGroup
+        GroupDescription: Security group for network entry poing
+        VpcId:
+          Fn::ImportValue:
+            !Sub ${EnvName}-MainVpcId
+        SecurityGroupIngress:
+          - IpProtocol: tcp
+            FromPort: 22
+            ToPort: 22
+            CidrIp: !Ref CiAccessIp
+          - IpProtocol: tcp
+            FromPort: 8080
+            ToPort: 8080
+            CidrIp: 0.0.0.0/0
+        SecurityGroupEgress:
+          - IpProtocol: tcp
+            FromPort: 0
+            ToPort: 65535
+            CidrIp: 0.0.0.0/0
+        Tags:
+          - Key: Name
+            Value: !Sub ${EnvName} bastion security group
+
+  #
+  # Server for CI
+  #
+  CiServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref CiSshKey
+      DisableApiTermination: false
+      ImageId: ami-0faf2c48fc9c8f966
+      InstanceType: !Ref CiInstanceType
+      Monitoring: false
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref CiSecurityGroup
+        SubnetId: 
+          Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install default-jre -y
+          wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io.key | apt-key add -
+          sh -c 'echo deb https://pkg.jenkins.io/debian-stable binary/ > \
+              /etc/apt/sources.list.d/jenkins.list'
+          apt-get update
+          apt-get install jenkins
+
+  
+
+Outputs:
+  CiIp:
+    Description: Ci server public ip
+    Value: !GetAtt CiServer.PublicIp
+    Export: 
+      Name: !Sub ${EnvName}-ci-public-ip

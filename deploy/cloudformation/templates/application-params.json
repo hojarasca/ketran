@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "EnvName",
+    "ParameterValue": "software-nodo"
+  },
+  {
+    "ParameterKey": "BastionAccessIp",
+    "ParameterValue": "181.22.117.132/0"
+  },
+  {
+    "ParameterKey": "MainAppInstanceType",
+    "ParameterValue": "t2.micro"
+  }
+]

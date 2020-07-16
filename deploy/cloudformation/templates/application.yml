@@ -1,0 +1,260 @@
+Description: Udagram app infraestructure
+
+Parameters:
+  EnvName:
+    Description: Name of the environment. 
+    Type: String
+  BastionAccessIp:
+    Description: Ip address for where bastion can be accessed
+    Type: String
+  BastionSshKey:
+    Description: ssh key used for bastion server
+    Type: String
+    Default: migue@pangea
+  MainAppInstanceType:
+    Description: Instance type used to deploy the main app
+    Type: String
+    Default: t3.medium # 2 vCPU, 4GiB ram
+
+Resources:
+  #
+  # IAM
+  #
+  AccessS3BucketInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - Ref: AccessS3BucketRole
+
+  AccessS3BucketRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: AccessS3BucketRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - 
+         PolicyName: "access-s3-elements"
+         PolicyDocument:
+           Version: "2012-10-17"
+           Statement:
+              - 
+                Effect: "Allow"
+                Action: 
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource: 
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
+                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
+
+  #
+  # Security groups
+  #
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: BastionSecurityGroup
+      GroupDescription: Security group for network entry poing
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref BastionAccessIp
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion security group
+  
+  MainAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} main app servers security group
+
+  MainAppLBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppLBSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app load balancer security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  MainAppLBEgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+      DestinationSecurityGroupId: !Ref MainAppSecurityGroup
+
+
+
+  #
+  # Computation (servers, scaling groups)
+  #
+  BastionServer:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref BastionSshKey
+      DisableApiTermination: false
+      ImageId: ami-003634241a8fcdec0
+      InstanceType: t2.micro
+      Monitoring: false
+      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      NetworkInterfaces: 
+      - AssociatePublicIpAddress: "true"
+        DeviceIndex: "0"
+        GroupSet: 
+          - !Ref BastionSecurityGroup
+        SubnetId: 
+          Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} bastion
+
+  MainAppASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy: 
+      AutoScalingRollingUpdate: 
+        MinInstancesInService: "1"
+        MaxBatchSize: "1"
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
+      LaunchConfigurationName: 
+        Ref: MainAppLaunchConfig
+      MinSize: 2
+      MaxSize: 6
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} main app server
+          PropagateAtLaunch: true
+      TargetGroupARNs:
+        - Ref: MainAppLBTargetGroup
+
+  MainAppLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: false
+      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      ImageId: ami-003634241a8fcdec0
+      EbsOptimized: false
+      InstanceMonitoring: false
+      InstanceType: !Ref MainAppInstanceType
+      KeyName: !Sub ${EnvName}-internal
+      SecurityGroups:
+        - !Ref MainAppSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: "/dev/sda1"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          apt-get install apache2 -y
+          systemctl start apache2.service
+  
+  #
+  # Load balancer
+  #
+  MainAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+        - !Ref MainAppLBSecurityGroup
+      Subnets:
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
+  
+  MainAppLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Ref: MainAppLB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: 
+            Ref: MainAppLBTargetGroup
+
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref MainAppLBTargetGroup
+      Conditions:
+      - Field: path-pattern
+        Values: [/]
+      ListenerArn: !Ref MainAppLBListener
+      Priority: 1
+
+  MainAppLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckPort: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 3
+      HealthyThresholdCount: 3
+      # Matcher: 
+      #   HttpCode: 200
+      Name: !Sub ${EnvName}-main-app-lb-tg
+      Port: 80
+      Protocol: HTTP
+      # Tags: 
+      #   - Tag
+      UnhealthyThresholdCount: 3
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+
+Outputs:
+  AppUrl:
+    Description: Project main url
+    Value: !Sub 
+      - http://${URL}
+      - { URL: !GetAtt MainAppLB.DNSName }
+    Export: 
+      Name: !Sub ${EnvName}-AppUrl
