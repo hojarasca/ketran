@@ -20,40 +20,40 @@ Resources:
   #
   # IAM
   #
-  AccessS3BucketInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Path: /
-      Roles:
-        - Ref: AccessS3BucketRole
+  # AccessS3BucketInstanceProfile:
+  #   Type: AWS::IAM::InstanceProfile
+  #   Properties:
+  #     Path: /
+  #     Roles:
+  #       - Ref: AccessS3BucketRole
 
-  AccessS3BucketRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: AccessS3BucketRole
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-              - ec2.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      Policies:
-        - 
-         PolicyName: "access-s3-elements"
-         PolicyDocument:
-           Version: "2012-10-17"
-           Statement:
-              - 
-                Effect: "Allow"
-                Action: 
-                  - s3:GetObject
-                  - s3:ListBucket
-                Resource: 
-                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
-                  - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
+  # AccessS3BucketRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     RoleName: AccessS3BucketRole
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service:
+  #             - ec2.amazonaws.com
+  #           Action:
+  #             - 'sts:AssumeRole'
+  #     Policies:
+  #       - 
+  #        PolicyName: "access-s3-elements"
+  #        PolicyDocument:
+  #          Version: "2012-10-17"
+  #          Statement:
+  #             - 
+  #               Effect: "Allow"
+  #               Action: 
+  #                 - s3:GetObject
+  #                 - s3:ListBucket
+  #               Resource: 
+  #                 - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
+  #                 - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
 
   #
   # Security groups
@@ -88,10 +88,10 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub ${EnvName}-MainVpcId
       SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
+        # - IpProtocol: tcp
+        #   FromPort: 80
+        #   ToPort: 80
+        #   SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
@@ -105,26 +105,26 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} main app servers security group
 
-  MainAppLBSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: MainAppLBSecurityGroup
-      GroupDescription: !Sub ${EnvName} main app load balancer security group
-      VpcId:
-        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-  MainAppLBEgressRule:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
-      IpProtocol: tcp
-      FromPort: 80
-      ToPort: 80
-      DestinationSecurityGroupId: !Ref MainAppSecurityGroup
+  # MainAppLBSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup
+  #   Properties:
+  #     GroupName: MainAppLBSecurityGroup
+  #     GroupDescription: !Sub ${EnvName} main app load balancer security group
+  #     VpcId:
+  #       Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+  #     SecurityGroupIngress:
+  #       - IpProtocol: tcp
+  #         FromPort: 80
+  #         ToPort: 80
+  #         CidrIp: 0.0.0.0/0
+  # MainAppLBEgressRule:
+  #   Type: AWS::EC2::SecurityGroupEgress
+  #   Properties:
+  #     GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
+  #     IpProtocol: tcp
+  #     FromPort: 80
+  #     ToPort: 80
+  #     DestinationSecurityGroupId: !Ref MainAppSecurityGroup
 
 
 
@@ -136,10 +136,10 @@ Resources:
     Properties:
       KeyName: !Ref BastionSshKey
       DisableApiTermination: false
-      ImageId: ami-003634241a8fcdec0
+      ImageId: ami-0faf2c48fc9c8f966
       InstanceType: t2.micro
       Monitoring: false
-      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      # IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
       NetworkInterfaces: 
       - AssociatePublicIpAddress: "true"
         DeviceIndex: "0"
@@ -151,7 +151,7 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} bastion
 
-  MainAppASG:
+  KubeMasterASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     UpdatePolicy: 
       AutoScalingRollingUpdate: 
@@ -162,99 +162,191 @@ Resources:
         - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
         - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
       LaunchConfigurationName: 
-        Ref: MainAppLaunchConfig
+        Ref: KubeMasterLaunchConfig
       MinSize: 2
-      MaxSize: 6
+      MaxSize: 2
       Tags:
         - Key: Name
-          Value: !Sub ${EnvName} main app server
+          Value: !Sub ${EnvName} kubernetes master
           PropagateAtLaunch: true
-      TargetGroupARNs:
-        - Ref: MainAppLBTargetGroup
+      # TargetGroupARNs:
+      #   - Ref: MainAppLBTargetGroup
 
-  MainAppLaunchConfig:
+  KubeMasterLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
-      IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
-      ImageId: ami-003634241a8fcdec0
+      # IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      ImageId: ami-0faf2c48fc9c8f966
       EbsOptimized: false
       InstanceMonitoring: false
       InstanceType: !Ref MainAppInstanceType
       KeyName: !Sub ${EnvName}-internal
       SecurityGroups:
         - !Ref MainAppSecurityGroup
-      BlockDeviceMappings:
-        - DeviceName: "/dev/sda1"
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           apt-get update -y
-          apt-get install apache2 -y
-          systemctl start apache2.service
-  
+          
+          ## Install docker
+          apt-get install -y \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+          add-apt-repository -y \
+            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) \
+            stable"
+          apt-get update -y
+          apt-get install docker-ce docker-ce-cli containerd.io
+
+          ## Grant permissions for docker
+          sudo usermod -aG docker ubuntu
+
+          ## Install kubernetes
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+          cat << EOF | sudo tee /etc/apt/sources.list.d/kubernetes.list
+            deb https://apt.kubernetes.io/ kubernetes-xenial main
+          EOF
+          sudo apt-get update -y
+          # sudo apt-get install -y docker-ce kubelet kubeadm kubectl
+
+
+
+          
+          
+  KubeNodeASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    UpdatePolicy: 
+      AutoScalingRollingUpdate: 
+        MinInstancesInService: "1"
+        MaxBatchSize: "1"
+    Properties:
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
+      LaunchConfigurationName: 
+        Ref: KubeNodeLaunchConfig
+      MinSize: 2
+      MaxSize: 2
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvName} kubernetes node
+          PropagateAtLaunch: true
+      # TargetGroupARNs:
+      #   - Ref: MainAppLBTargetGroup
+
+  KubeNodeLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: false
+      # IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
+      ImageId: ami-0faf2c48fc9c8f966
+      EbsOptimized: false
+      InstanceMonitoring: false
+      InstanceType: !Ref MainAppInstanceType
+      KeyName: !Sub ${EnvName}-internal
+      SecurityGroups:
+        - !Ref MainAppSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          apt-get update -y
+          
+          ## Install docker
+          apt-get install -y \
+            apt-transport-https \
+            ca-certificates \
+            curl \
+            gnupg-agent \
+            software-properties-common
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+          add-apt-repository -y \
+            "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) \
+            stable"
+          apt-get update -y
+          apt-get install docker-ce docker-ce-cli containerd.io
+
+          ## Grant permissions for docker
+          sudo usermod -aG docker ubuntu
+
+
+
+
   #
   # Load balancer
   #
-  MainAppLB:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      SecurityGroups:
-        - !Ref MainAppLBSecurityGroup
-      Subnets:
-        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
-        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
+  # MainAppLB:
+  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  #   Properties:
+  #     SecurityGroups:
+  #       - !Ref MainAppLBSecurityGroup
+  #     Subnets:
+  #       - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+  #       - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
   
-  MainAppLBListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn:
-        Ref: MainAppLB
-      Port: 80
-      Protocol: HTTP
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: 
-            Ref: MainAppLBTargetGroup
+  # MainAppLBListener:
+  #   Type: AWS::ElasticLoadBalancingV2::Listener
+  #   Properties:
+  #     LoadBalancerArn:
+  #       Ref: MainAppLB
+  #     Port: 80
+  #     Protocol: HTTP
+  #     DefaultActions:
+  #       - Type: forward
+  #         TargetGroupArn: 
+  #           Ref: MainAppLBTargetGroup
 
-  ALBListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      Actions:
-      - Type: forward
-        TargetGroupArn: !Ref MainAppLBTargetGroup
-      Conditions:
-      - Field: path-pattern
-        Values: [/]
-      ListenerArn: !Ref MainAppLBListener
-      Priority: 1
+  # ALBListenerRule:
+  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
+  #   Properties:
+  #     Actions:
+  #     - Type: forward
+  #       TargetGroupArn: !Ref MainAppLBTargetGroup
+  #     Conditions:
+  #     - Field: path-pattern
+  #       Values: [/]
+  #     ListenerArn: !Ref MainAppLBListener
+  #     Priority: 1
 
-  MainAppLBTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties: 
-      HealthCheckEnabled: true
-      HealthCheckIntervalSeconds: 10
-      HealthCheckPath: /
-      HealthCheckPort: 80
-      HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 3
-      HealthyThresholdCount: 3
-      # Matcher: 
-      #   HttpCode: 200
-      Name: !Sub ${EnvName}-main-app-lb-tg
-      Port: 80
-      Protocol: HTTP
-      # Tags: 
-      #   - Tag
-      UnhealthyThresholdCount: 3
-      VpcId: 
-        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+  # MainAppLBTargetGroup:
+  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  #   Properties: 
+  #     HealthCheckEnabled: true
+  #     HealthCheckIntervalSeconds: 10
+  #     HealthCheckPath: /
+  #     HealthCheckPort: 80
+  #     HealthCheckProtocol: HTTP
+  #     HealthCheckTimeoutSeconds: 3
+  #     HealthyThresholdCount: 3
+  #     # Matcher: 
+  #     #   HttpCode: 200
+  #     Name: !Sub ${EnvName}-main-app-lb-tg
+  #     Port: 80
+  #     Protocol: HTTP
+  #     # Tags: 
+  #     #   - Tag
+  #     UnhealthyThresholdCount: 3
+  #     VpcId: 
+  #       Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+
+# Outputs:
+#   AppUrl:
+#     Description: Project main url
+#     Value: !Sub 
+#       - http://${URL}
+#       - { URL: !GetAtt MainAppLB.DNSName }
+#     Export: 
+#       Name: !Sub ${EnvName}-AppUrl
 
 Outputs:
-  AppUrl:
-    Description: Project main url
-    Value: !Sub 
-      - http://${URL}
-      - { URL: !GetAtt MainAppLB.DNSName }
+  BastionIp:
+    Description: Bastion server public ip
+    Value: !GetAtt BastionServer.PublicIp
     Export: 
-      Name: !Sub ${EnvName}-AppUrl
+      Name: !Sub ${EnvName}-bastion-public-ip

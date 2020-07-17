@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "EnvName",
-    "ParameterValue": "silicio"
+    "ParameterValue": "ketran"
   },
   {
     "ParameterKey": "BastionAccessIp",
@@ -9,6 +9,6 @@
   },
   {
     "ParameterKey": "MainAppInstanceType",
-    "ParameterValue": "t2.micro"
+    "ParameterValue": "t3.medium"
   }
 ]

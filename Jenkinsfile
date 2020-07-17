@@ -3,14 +3,14 @@ pipeline {
     stages {
         stage('Build docker image') {
             steps {
-                dir("silicio-webapp") {
-                    sh "docker build -t silicio-webapp:latest ."
+                dir("ketran-webapp") {
+                    sh "docker build -t ketran-webapp:latest ."
                 }
             }
         }
         stage('Destroy docker image') { // Save disk space.
             steps {
-                sh "docker image rm silicio-webapp:latest"
+                sh "docker image rm ketran-webapp:latest"
             }
         }
         stage('Example task') {
