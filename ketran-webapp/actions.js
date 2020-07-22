@@ -4,7 +4,7 @@ import * as types from './types'
 export const serverRenderClock = () => (dispatch) =>
   dispatch({
     type: types.TICK,
-    payload: { light: false, ts: Date.now() },
+    payload: { light: false, ts: Date.now() }
   })
 
 // INITIALIZES CLOCK ON CLIENT

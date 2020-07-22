@@ -22,7 +22,8 @@ const Clock = () => {
         .light {
           background-color: #999;
         }
-      `}</style>
+      `}
+      </style>
     </div>
   )
 }

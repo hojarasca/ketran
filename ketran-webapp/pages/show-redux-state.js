@@ -6,7 +6,7 @@ const codeStyle = {
   width: 400,
   padding: 10,
   border: '1px solid grey',
-  marginBottom: 10,
+  marginBottom: 10
 }
 
 const ShowReduxState = () => {
@@ -17,7 +17,7 @@ const ShowReduxState = () => {
       <pre style={codeStyle}>
         <code>{JSON.stringify(state, null, 4)}</code>
       </pre>
-      <Link href="/">
+      <Link href='/'>
         <a>Go Back Home</a>
       </Link>
     </>

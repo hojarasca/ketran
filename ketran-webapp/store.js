@@ -6,7 +6,7 @@ import reducers from './reducers'
 
 let store
 
-function initStore(initialState) {
+function initStore (initialState) {
   return createStore(
     reducers,
     initialState,
@@ -22,7 +22,7 @@ export const initializeStore = (preloadedState) => {
   if (preloadedState && store) {
     _store = initStore({
       ...store.getState(),
-      ...preloadedState,
+      ...preloadedState
     })
     // Reset the current store
     store = undefined
@@ -36,7 +36,7 @@ export const initializeStore = (preloadedState) => {
   return _store
 }
 
-export function useStore(initialState) {
+export function useStore (initialState) {
   const store = useMemo(() => initializeStore(initialState), [initialState])
   return store
 }
