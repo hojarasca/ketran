@@ -13,7 +13,6 @@ const Index = () => {
   return (
     <>
       <Examples />
-      <h1>V2</h1>
       <Link href="/show-redux-state">
         <a>Click to see current Redux State</a>
       </Link>
