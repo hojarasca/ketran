@@ -1,3 +1,7 @@
+def currentCommit() {
+    return sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+}
+
 pipeline {
     agent any
     stages {
@@ -26,15 +30,17 @@ pipeline {
         }
 
         stage('Docker') {
+            environment {
+                TAG_NAME = "hojarasca/ketran-webapp:${currentCommit()}"
+            }
             steps {
-                def currentCommit = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
-                def tagName = "hojarasca/ketran-webapp:${currentCommit}"
+                
 
                 dir("ketran-webapp") {
-                    sh "docker build -t ${tagName} ."
+                    sh "docker build -t $TAG_NAME ."
                 }
-                sh "docker push ${tagName}"
-                sh "docker image rm ${tagName}" // Save disk space.
+                sh "docker push $TAG_NAME"
+                sh "docker image rm $TAG_NAME" // Save disk space.
             }
         }
 
