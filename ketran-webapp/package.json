@@ -4,7 +4,9 @@
   "scripts": {
     "dev": "next",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "standard",
+    "test": "echo 'no tests yet'"
   },
   "dependencies": {
     "next": "latest",
