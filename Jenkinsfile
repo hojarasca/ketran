@@ -11,7 +11,7 @@ pipeline {
             }
             steps {
                 dir("ketran-webapp") {
-                    sh "yarn i"
+                    sh "yarn"
                     sh "yarn lint"
                     sh "yarn test"
                 }
