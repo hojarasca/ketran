@@ -96,6 +96,11 @@ Resources:
           FromPort: 0
           ToPort: 65535
           SourceSecurityGroupId: !Ref BastionSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 0
+          ToPort: 65535
+          SourceSecurityGroupId:
+            Fn::ImportValue: !Sub ${EnvName}-ci-security-group
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 0
@@ -204,7 +209,6 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: false
-      # IamInstanceProfile: !Ref AccessS3BucketInstanceProfile
       ImageId: ami-0faf2c48fc9c8f966
       EbsOptimized: false
       InstanceMonitoring: false

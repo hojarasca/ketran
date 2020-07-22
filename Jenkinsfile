@@ -17,7 +17,7 @@ pipeline {
             }
         }
 
-        state('Test') {
+        stage('Test') {
             steps {
                 dir("ketran-webapp") {
                     sh "yarn test"
@@ -27,8 +27,8 @@ pipeline {
 
         stage('Docker') {
             steps {
-                def GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
-                def tagName = "hojarasca/ketran-webapp:${GIT_COMMIT_HASH}"
+                GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+                tagName = "hojarasca/ketran-webapp:${GIT_COMMIT_HASH}"
                 dir("ketran-webapp") {
                     sh "docker build -t ${tagName} ."
                 }

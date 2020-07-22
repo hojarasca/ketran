@@ -105,3 +105,8 @@ Outputs:
     Value: !GetAtt CiServer.PublicIp
     Export: 
       Name: !Sub ${EnvName}-ci-public-ip
+  CiSecurityGroup:
+    Description: Ci security group
+    Value: !Ref CiSecurityGroup
+    Export: 
+      Name: !Sub ${EnvName}-ci-security-group
