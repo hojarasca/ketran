@@ -6,9 +6,6 @@ pipeline {
     agent any
     stages {
         stage('Build, lint and test') {
-            agent {
-                docker { image 'node:12-alpine' }
-            }
             steps {
                 dir("ketran-webapp") {
                     sh "yarn"
