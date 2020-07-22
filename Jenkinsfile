@@ -27,8 +27,9 @@ pipeline {
 
         stage('Docker') {
             steps {
-                GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
-                tagName = "hojarasca/ketran-webapp:${GIT_COMMIT_HASH}"
+                def currentCommit = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
+                def tagName = "hojarasca/ketran-webapp:${currentCommit}"
+
                 dir("ketran-webapp") {
                     sh "docker build -t ${tagName} ."
                 }
