@@ -3,19 +3,23 @@ kind: Deployment
 metadata:
   name: ketran-webapp-deployment
   labels:
-    app: ketran-webapp
+    app: ketran
+    role: webapp
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: ketran-webapp
+      app: ketran
+      role: webapp
   template:
     metadata:
       labels:
-        app: ketran-webapp
+        app: ketran
+        role: webapp
     spec:
       containers:
       - image: hojarasca/ketran-webapp:latest
+        imagePullPolicy: Always
         name: ketran-webapp
         livenessProbe:
           httpGet:
@@ -28,7 +32,8 @@ spec:
         resources:
           limits:
             memory: "128Mi"
-            cpu: "500m"
+            cpu: "100m"
+        metadata:
         ports:
           - containerPort: 3000
             name: http
