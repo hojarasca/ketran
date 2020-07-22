@@ -5,25 +5,14 @@ def currentCommit() {
 pipeline {
     agent any
     stages {
-        stage('Build') {
+        stage('Build, lint and test') {
+            agent {
+                docker { image 'node:12-alpine' }
+            }
             steps {
                 dir("instal dependencies") {
                     sh "yarn i"
-                }
-            }
-        }
-
-        stage('Lint') {
-            steps {
-                dir("ketran-webapp") {
                     sh "yarn lint"
-                }
-            }
-        }
-
-        stage('Test') {
-            steps {
-                dir("ketran-webapp") {
                     sh "yarn test"
                 }
             }
