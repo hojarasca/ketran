@@ -10,7 +10,7 @@ pipeline {
                 docker { image 'node:12-alpine' }
             }
             steps {
-                dir("instal dependencies") {
+                dir("ketran-webapp") {
                     sh "yarn i"
                     sh "yarn lint"
                     sh "yarn test"
