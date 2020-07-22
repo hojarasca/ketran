@@ -25,7 +25,7 @@ pipeline {
             }
         }
 
-        stage('Docker') { // Save disk space.
+        stage('Docker') {
             steps {
                 def GIT_COMMIT_HASH = sh (script: "git log -n 1 --pretty=format:'%H'", returnStdout: true)
                 def tagName = "hojarasca/ketran-webapp:${GIT_COMMIT_HASH}"
@@ -33,7 +33,7 @@ pipeline {
                     sh "docker build -t ${tagName} ."
                 }
                 sh "docker push ${tagName}"
-                sh "docker image rm ${tagName}"
+                sh "docker image rm ${tagName}" // Save disk space.
             }
         }
 
