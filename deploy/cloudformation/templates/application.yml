@@ -164,8 +164,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} kubernetes master
           PropagateAtLaunch: true
-      # TargetGroupARNs:
-      #   - Ref: MainAppLBTargetGroup
+      TargetGroupARNs:
+        - Ref: MainAppLBTargetGroup
 
   KubeMasterLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -224,7 +224,7 @@ Resources:
         - Fn::ImportValue: !Sub ${EnvName}-PrivateSubnetBid
       LaunchConfigurationName: 
         Ref: KubeNodeLaunchConfig
-      MinSize: 1
+      MinSize: 2
       MaxSize: 2
       Tags:
         - Key: Name
