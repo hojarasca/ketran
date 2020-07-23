@@ -64,10 +64,10 @@ I'm using my personal dockerhub account to store docker images.
 ### Lint
 
 I'm linting the code with standard js. It's a simple js linter that I
-reallylike. The linter is ran by
-jenkins[here](https://github.com/hojarasca/ketran/blob/master/Jenkinsfile#L12),
-andstandard is
-called[here](https://github.com/hojarasca/ketran/blob/master/ketran-webapp/package.json#L8).
+reallylike. The linter is ran by jenkins
+[here](https://github.com/hojarasca/ketran/blob/master/Jenkinsfile#L12),
+andstandard is called
+[here](https://github.com/hojarasca/ketran/blob/master/ketran-webapp/package.json#L8).
 This is an screen capture of the linter passing in CI:![screen capture ci
 passing](_screenshots/ci_passing.png) This is an screen capture of the ling
 falling in ci:![screen capture ci passing](_screenshots/ci_failing.png)
