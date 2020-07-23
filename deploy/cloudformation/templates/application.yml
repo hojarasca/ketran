@@ -18,44 +18,6 @@ Parameters:
 
 Resources:
   #
-  # IAM
-  #
-  # AccessS3BucketInstanceProfile:
-  #   Type: AWS::IAM::InstanceProfile
-  #   Properties:
-  #     Path: /
-  #     Roles:
-  #       - Ref: AccessS3BucketRole
-
-  # AccessS3BucketRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     RoleName: AccessS3BucketRole
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service:
-  #             - ec2.amazonaws.com
-  #           Action:
-  #             - 'sts:AssumeRole'
-  #     Policies:
-  #       - 
-  #        PolicyName: "access-s3-elements"
-  #        PolicyDocument:
-  #          Version: "2012-10-17"
-  #          Statement:
-  #             - 
-  #               Effect: "Allow"
-  #               Action: 
-  #                 - s3:GetObject
-  #                 - s3:ListBucket
-  #               Resource: 
-  #                 - !Sub arn:aws:s3:::${SourceCodeS3Bucket}
-  #                 - !Sub arn:aws:s3:::${SourceCodeS3Bucket}/*
-
-  #
   # Security groups
   #
   BastionSecurityGroup:
@@ -88,10 +50,10 @@ Resources:
       VpcId:
         Fn::ImportValue: !Sub ${EnvName}-MainVpcId
       SecurityGroupIngress:
-        # - IpProtocol: tcp
-        #   FromPort: 80
-        #   ToPort: 80
-        #   SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
+        - IpProtocol: tcp
+          FromPort: 31273
+          ToPort: 31273
+          SourceSecurityGroupId: !Ref MainAppLBSecurityGroup
         - IpProtocol: tcp
           FromPort: 0
           ToPort: 65535
@@ -142,26 +104,26 @@ Resources:
       ToPort: 65535
       SourceSecurityGroupId: !Ref KubernetesSecurityGroup
 
-  # MainAppLBSecurityGroup:
-  #   Type: AWS::EC2::SecurityGroup
-  #   Properties:
-  #     GroupName: MainAppLBSecurityGroup
-  #     GroupDescription: !Sub ${EnvName} main app load balancer security group
-  #     VpcId:
-  #       Fn::ImportValue: !Sub ${EnvName}-MainVpcId
-  #     SecurityGroupIngress:
-  #       - IpProtocol: tcp
-  #         FromPort: 80
-  #         ToPort: 80
-  #         CidrIp: 0.0.0.0/0
-  # MainAppLBEgressRule:
-  #   Type: AWS::EC2::SecurityGroupEgress
-  #   Properties:
-  #     GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
-  #     IpProtocol: tcp
-  #     FromPort: 80
-  #     ToPort: 80
-  #     DestinationSecurityGroupId: !Ref KubernetesSecurityGroup
+  MainAppLBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: MainAppLBSecurityGroup
+      GroupDescription: !Sub ${EnvName} main app load balancer security group
+      VpcId:
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  MainAppLBEgressRule:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      GroupId: !GetAtt MainAppLBSecurityGroup.GroupId 
+      IpProtocol: tcp
+      FromPort: 31273
+      ToPort: 31273
+      DestinationSecurityGroupId: !Ref KubernetesSecurityGroup
 
 
 
@@ -268,8 +230,8 @@ Resources:
         - Key: Name
           Value: !Sub ${EnvName} kubernetes node
           PropagateAtLaunch: true
-      # TargetGroupARNs:
-      #   - Ref: MainAppLBTargetGroup
+      TargetGroupARNs:
+        - Ref: MainAppLBTargetGroup
 
   KubeNodeLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -319,68 +281,59 @@ Resources:
   #
   # Load balancer
   #
-  # MainAppLB:
-  #   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-  #   Properties:
-  #     SecurityGroups:
-  #       - !Ref MainAppLBSecurityGroup
-  #     Subnets:
-  #       - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
-  #       - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
+  MainAppLB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      SecurityGroups:
+        - !Ref MainAppLBSecurityGroup
+      Subnets:
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetAid
+        - Fn::ImportValue: !Sub ${EnvName}-PublicSubnetBid
   
-  # MainAppLBListener:
-  #   Type: AWS::ElasticLoadBalancingV2::Listener
-  #   Properties:
-  #     LoadBalancerArn:
-  #       Ref: MainAppLB
-  #     Port: 80
-  #     Protocol: HTTP
-  #     DefaultActions:
-  #       - Type: forward
-  #         TargetGroupArn: 
-  #           Ref: MainAppLBTargetGroup
+  MainAppLBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn:
+        Ref: MainAppLB
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: 
+            Ref: MainAppLBTargetGroup
 
-  # ALBListenerRule:
-  #   Type: AWS::ElasticLoadBalancingV2::ListenerRule
-  #   Properties:
-  #     Actions:
-  #     - Type: forward
-  #       TargetGroupArn: !Ref MainAppLBTargetGroup
-  #     Conditions:
-  #     - Field: path-pattern
-  #       Values: [/]
-  #     ListenerArn: !Ref MainAppLBListener
-  #     Priority: 1
+  ALBListenerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+      - Type: forward
+        TargetGroupArn: !Ref MainAppLBTargetGroup
+      Conditions:
+      - Field: path-pattern
+        Values: [/]
+      ListenerArn: !Ref MainAppLBListener
+      Priority: 1
 
-  # MainAppLBTargetGroup:
-  #   Type: AWS::ElasticLoadBalancingV2::TargetGroup
-  #   Properties: 
-  #     HealthCheckEnabled: true
-  #     HealthCheckIntervalSeconds: 10
-  #     HealthCheckPath: /
-  #     HealthCheckPort: 80
-  #     HealthCheckProtocol: HTTP
-  #     HealthCheckTimeoutSeconds: 3
-  #     HealthyThresholdCount: 3
-  #     # Matcher: 
-  #     #   HttpCode: 200
-  #     Name: !Sub ${EnvName}-main-app-lb-tg
-  #     Port: 80
-  #     Protocol: HTTP
-  #     # Tags: 
-  #     #   - Tag
-  #     UnhealthyThresholdCount: 3
-  #     VpcId: 
-  #       Fn::ImportValue: !Sub ${EnvName}-MainVpcId
+  MainAppLBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      HealthCheckEnabled: true
+      HealthCheckIntervalSeconds: 10
+      HealthCheckPath: /
+      HealthCheckPort: 31273
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 3
+      HealthyThresholdCount: 3
+      # Matcher: 
+      #   HttpCode: 200
+      Port: 31273
+      Protocol: HTTP
+      # Tags: 
+      #   - Tag
+      UnhealthyThresholdCount: 3
+      VpcId: 
+        Fn::ImportValue: !Sub ${EnvName}-MainVpcId
 
-# Outputs:
-#   AppUrl:
-#     Description: Project main url
-#     Value: !Sub 
-#       - http://${URL}
-#       - { URL: !GetAtt MainAppLB.DNSName }
-#     Export: 
-#       Name: !Sub ${EnvName}-AppUrl
 
 Outputs:
   BastionIp:
@@ -388,3 +341,10 @@ Outputs:
     Value: !GetAtt BastionServer.PublicIp
     Export: 
       Name: !Sub ${EnvName}-bastion-public-ip
+  AppUrl:
+    Description: Project main url
+    Value: !Sub 
+      - http://${URL}
+      - { URL: !GetAtt MainAppLB.DNSName }
+    Export: 
+      Name: !Sub ${EnvName}-AppUrl
