@@ -33,7 +33,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 dir('deploy/kubernetes') {
-                    sh 'kubectl apply -f ketran-webapp-deployment.yml'
+                    sh "sed 's/latest/${currentCommit()}/g' ketran-webapp-deployment.yml | kubectl apply -f -"
                     sh 'kubectl apply -f ketran-webapp-service.yml'
                 }
             }
