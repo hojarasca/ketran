@@ -1,19 +1,17 @@
 # Como crear el kube cluster.
 
-1. Crear infraestructura:
-  - `./actions/deploy-network.yml`
-  - `./actions/deploy-network.yml`
-2. Copiar el certificado interno a bastion con scp. Guardarlo como `id_rsa` defauly y darle permisos 600.
-  - `scp ./localDev/ketran-internal.pem ubuntu@bastion_ip:.`
-  - `ssh ubuntu@bastion_op`
-  - `cp ketran-internal.pem .ssh/id_rsa`
+1. Create infraestructure:
+  - `./actions/deploy-all.yml`
+2. Copy the internal certificate to the bastion server.
+  - `scp ./route/to/ketran-internal.pem ubuntu@bastion_ip:.ssh/id_rsa`
+  - `ssh ubuntu@bastion_ip`
   - `chmod 600 .ssh/id_rsa`
-3. entrar al bastión y de ahí al master e inicializar kubernetes:
+3. From bastion enter into the master node and init the cluster:
   - `ssh ubuntu@master_ip`
   - `sudo kubeadm init --pod-network-cidr=10.244.0.0/16`
-  - Ejercutar los 3 comandos que hacen que kubectl ande.
-  - Guardar el comando para unir nodos.
-4. Instalar el coso mágico de network:
+  - Config `kubectl` with the given commands
+  - Save the command to join nodes.
+4. Install flannel:
   - `sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml`
-5. Ir a los workers y ejecutar el comando de unirse al cluster.
-6. Listo :)
+5. From bastion ssh into the worker nodes and execute the join command.
+6. Ready to go :)
