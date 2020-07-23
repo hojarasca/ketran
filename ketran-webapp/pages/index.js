@@ -12,7 +12,7 @@ const Index = () => {
 
   return (
     <>
-      <h1>Some title</h1>
+      <h1>Miguel Duarte Capstone project.</h1>
       <Examples />
       <Link href='/show-redux-state'>
         <a>Click to see current Redux State</a>
