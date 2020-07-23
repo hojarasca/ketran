@@ -6,7 +6,7 @@ const codeStyle = {
   width: 400,
   padding: 10,
   border: '1px solid grey',
-  marginBottom: 10,
+  marginBottom: 10
 }
 
 const ShowReduxState = () => {
